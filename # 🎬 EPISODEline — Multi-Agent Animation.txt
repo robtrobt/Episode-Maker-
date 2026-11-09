@@ -1,0 +1,888 @@
+# 🎬 EPISODEline — Multi-Agent Animation Pipeline
+
+Here's the full build. A modular, extensible Python pipeline with every agent, data contracts, the consistency loop, and the parallel fork/join.
+
+---
+
+## Project Structure
+
+```
+episodeline/
+├── models.py            # Data contracts between agents
+├── agents/
+│   ├── base.py          # Abstract agent
+│   ├── creative.py      # Creative Director
+│   ├── story.py         # Story Agent
+│   ├── storyboard.py    # Storyboard Agent
+│   ├── character.py     # Character Agent
+│   ├── world.py         # World Agent
+│   ├── visual.py        # Visual Agent
+│   ├── consistency.py   # Consistency Agent (with FAIL loop)
+│   ├── animation.py     # Animation Agent
+│   ├── audio.py         # Audio Agent
+│   └── editor.py        # Editor Agent
+├── pipeline.py          # Orchestrator (fork/join/loop)
+├── config.py            # LLM + tool config
+└── main.py              # Entry point
+```
+
+---
+
+## 1. `models.py` — Data Contracts
+
+```python
+"""Data models passed between pipeline agents."""
+from __future__ import annotations
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Optional
+
+
+# ── Enums ──────────────────────────────────────────────
+class Tone(Enum):
+    COMEDY = "comedy"
+    DRAMA = "drama"
+    HORROR = "horror"
+    EDUCATIONAL = "educational"
+    ACTION = "action"
+    WHIMSICAL = "whimsical"
+
+class Audience(Enum):
+    KIDS = "kids"
+    TEENS = "teens"
+    ADULTS = "adults"
+    ALL_AGES = "all_ages"
+
+class ShotType(Enum):
+    WIDE = "wide"
+    MEDIUM = "medium"
+    CLOSE_UP = "close_up"
+    EXTREME_CLOSE = "extreme_close"
+    OVER_SHOULDER = "over_shoulder"
+    BIRD_EYE = "bird_eye"
+    LOW_ANGLE = "low_angle"
+
+class ConsistencyVerdict(Enum):
+    PASS = "pass"
+    FAIL = "fail"
+
+
+# ── Stage 1: Creative Brief ────────────────────────────
+@dataclass
+class CreativeBrief:
+    raw_idea: str
+    tone: Tone
+    audience: Audience
+    goals: list[str]
+    style_notes: str = ""
+    runtime_target_sec: int = 120
+    aspect_ratio: str = "16:9"
+
+
+# ── Stage 2: Script ───────────────────────────────────
+@dataclass
+class DialogueLine:
+    character: str
+    line: str
+    emotion: str = "neutral"
+
+@dataclass
+class Script:
+    title: str
+    logline: str
+    synopsis: str
+    scenes: list[Scene] = field(default_factory=list)
+
+@dataclass
+class Scene:
+    scene_id: str
+    heading: str              # "INT. COFFEE SHOP - DAY"
+    description: str
+    dialogue: list[DialogueLine] = field(default_factory=list)
+    narration: str = ""
+
+
+# ── Stage 3: Storyboard ───────────────────────────────
+@dataclass
+class Shot:
+    shot_id: str
+    scene_id: str
+    shot_type: ShotType
+    action: str
+    camera_move: str = "static"
+    duration_sec: float = 3.0
+    notes: str = ""
+
+@dataclass
+class Storyboard:
+    shots: list[Shot] = field(default_factory=list)
+    total_duration_sec: float = 0.0
+
+
+# ── Stage 4a: Characters (parallel) ──────────────────
+@dataclass
+class CharacterSheet:
+    name: str
+    description: str
+    pose: str = "standing neutral"
+    expression: str = "neutral"
+    clothing: str = ""
+    color_palette: list[str] = field(default_factory=list)
+    reference_tags: list[str] = field(default_factory=list)  # "iggies" anchors
+
+@dataclass
+class CharacterPack:
+    characters: list[CharacterSheet] = field(default_factory=list)
+
+
+# ── Stage 4b: World (parallel) ───────────────────────
+@dataclass
+class EnvironmentSheet:
+    location: str
+    description: str
+    props: list[str] = field(default_factory=list)
+    lighting: str = "natural daylight"
+    atmosphere: str = "warm"
+    color_grade: str = ""
+
+@dataclass
+class WorldPack:
+    environments: list[EnvironmentSheet] = field(default_factory=list)
+
+
+# ── Stage 5: Visuals ─────────────────────────────────
+@dataclass
+class KeyFrame:
+    shot_id: str
+    image_prompt: str          # fed to image gen
+    layout_description: str
+    character_refs: list[str] = field(default_factory=list)
+    environment_ref: str = ""
+    image_path: Optional[str] = None
+
+@dataclass
+class VisualPack:
+    frames: list[KeyFrame] = field(default_factory=list)
+
+
+# ── Stage 6: Consistency ─────────────────────────────
+@dataclass
+class ConsistencyIssue:
+    frame_id: str
+    field: str                 # "wardrobe", "face", "props"
+    description: str
+    severity: str = "major"    # major | minor
+
+@dataclass
+class ConsistencyReport:
+    verdict: ConsistencyVerdict
+    issues: list[ConsistencyIssue] = field(default_factory=list)
+    revision_notes: str = ""
+
+
+# ── Stage 7: Animation ───────────────────────────────
+@dataclass
+class AnimatedShot:
+    shot_id: str
+    motion_description: str
+    timing_notes: str = ""
+    lip_sync_script: str = ""
+    transition_in: str = "cut"
+    transition_out: str = "cut"
+    video_path: Optional[str] = None
+
+@dataclass
+class AnimationPack:
+    shots: list[AnimatedShot] = field(default_factory=list)
+
+
+# ── Stage 8: Audio ────────────────────────────────────
+@dataclass
+class AudioTrack:
+    track_type: str            # "dialogue" | "music" | "sfx" | "ambience"
+    description: str
+    file_path: Optional[str] = None
+    start_sec: float = 0.0
+    end_sec: float = 0.0
+
+@dataclass
+class AudioPack:
+    tracks: list[AudioTrack] = field(default_factory=list)
+
+
+# ── Stage 9: Final Edit ──────────────────────────────
+@dataclass
+class Episode:
+    title: str
+    runtime_sec: float
+    video_path: Optional[str] = None
+    thumbnail_path: Optional[str] = None
+    metadata: dict = field(default_factory=dict)
+```
+
+---
+
+## 2. `agents/base.py` — Abstract Agent
+
+```python
+"""Base class every agent inherits."""
+from __future__ import annotations
+import abc
+import logging
+from typing import Any
+
+logger = logging.getLogger("episodeline")
+
+
+class BaseAgent(abc.ABC):
+    """All pipeline agents share a name, a logger, and a run() contract."""
+
+    def __init__(self, name: str, llm_client: Any = None):
+        self.name = name
+        self.llm = llm_client
+        self.log = logger.getChild(name)
+
+    @abc.abstractmethod
+    async def run(self, **kwargs) -> Any:
+        """Execute the agent's task and return its output model."""
+        ...
+
+    def __repr__(self) -> str:
+        return f"<{self.name}>"
+```
+
+---
+
+## 3. Individual Agents
+
+### `agents/creative.py`
+```python
+from .base import BaseAgent
+from models import CreativeBrief, Tone, Audience
+
+class CreativeDirectorAgent(BaseAgent):
+    """Interprets the user's raw idea into a structured creative brief."""
+
+    def __init__(self, llm_client=None):
+        super().__init__("CreativeDirector", llm_client)
+
+    async def run(self, raw_idea: str, **kw) -> CreativeBrief:
+        self.log.info("Interpreting idea: %s", raw_idea[:80])
+
+        # ── LLM call (pseudo) ──
+        # prompt = f"""You are a creative director. Given this idea,
+        # determine tone, audience, goals, and style notes.
+        # IDEA: {raw_idea}
+        # Respond as JSON: {{tone, audience, goals[], style_notes, runtime}}"""
+        # result = await self.llm.chat(prompt)
+
+        # Placeholder — replace with real LLM parse
+        return CreativeBrief(
+            raw_idea=raw_idea,
+            tone=Tone.COMEDY,
+            audience=Audience.ALL_AGES,
+            goals=["entertain", "build brand"],
+            style_notes="cartoony, bright colors",
+            runtime_target_sec=120,
+        )
+```
+
+### `agents/story.py`
+```python
+from .base import BaseAgent
+from models import CreativeBrief, Script, Scene, DialogueLine
+
+class StoryAgent(BaseAgent):
+    """Generates plot, script, dialogue, and narration."""
+
+    def __init__(self, llm_client=None):
+        super().__init__("Story", llm_client)
+
+    async def run(self, brief: CreativeBrief, **kw) -> Script:
+        self.log.info("Writing script for '%s'", brief.raw_idea[:40])
+
+        # prompt = f"""Write a {brief.runtime_target_sec}s animated script.
+        # Tone: {brief.tone.value}. Audience: {brief.audience.value}.
+        # Idea: {brief.raw_idea}
+        # Return JSON with title, logline, synopsis, scenes[]."""
+
+        return Script(
+            title="The Great Iggies Caper",
+            logline="A misfit crew pulls off a heist in a candy factory.",
+            synopsis="...",
+            scenes=[
+                Scene(
+                    scene_id="S1",
+                    heading="INT. CANDY FACTORY - NIGHT",
+                    description="Rows of gummy machines hum under neon lights.",
+                    dialogue=[
+                        DialogueLine("Iggy", "Let's grab the golden gummy."),
+                        DialogueLine("Blaze", "You're crazy. I love it."),
+                    ],
+                ),
+            ],
+        )
+```
+
+### `agents/storyboard.py`
+```python
+from .base import BaseAgent
+from models import Script, Storyboard, Shot, ShotType
+
+class StoryboardAgent(BaseAgent):
+    """Breaks the script into shots with camera direction."""
+
+    def __init__(self, llm_client=None):
+        super().__init__("Storyboard", llm_client)
+
+    async def run(self, script: Script, **kw) -> Storyboard:
+        self.log.info("Storyboarding %d scenes", len(script.scenes))
+        shots = []
+        for scene in script.scenes:
+            shots.append(Shot(
+                shot_id=f"{scene.scene_id}_01",
+                scene_id=scene.scene_id,
+                shot_type=ShotType.WIDE,
+                action=scene.description,
+                duration_sec=4.0,
+            ))
+            for i, d in enumerate(scene.dialogue):
+                shots.append(Shot(
+                    shot_id=f"{scene.scene_id}_{i+2:02d}",
+                    scene_id=scene.scene_id,
+                    shot_type=ShotType.CLOSE_UP,
+                    action=f"{d.character}: {d.line}",
+                    duration_sec=3.0,
+                ))
+        return Storyboard(
+            shots=shots,
+            total_duration_sec=sum(s.duration_sec for s in shots),
+        )
+```
+
+### `agents/character.py`
+```python
+from .base import BaseAgent
+from models import Script, Storyboard, CharacterPack, CharacterSheet
+
+class CharacterAgent(BaseAgent):
+    """Defines who is in each shot — pose, expression, wardrobe."""
+
+    def __init__(self, llm_client=None):
+        super().__init__("Character", llm_client)
+
+    async def run(self, script: Script, storyboard: Storyboard, **kw) -> CharacterPack:
+        self.log.info("Designing characters")
+        # Extract unique character names from dialogue
+        names = {d.character for s in script.scenes for d in s.dialogue}
+        sheets = []
+        for name in names:
+            sheets.append(CharacterSheet(
+                name=name,
+                description=f"{name} — lead character, distinct silhouette",
+                clothing="signature outfit",
+                color_palette=["#FF6B6B", "#4ECDC4"],
+                reference_tags=[f"iggies_{name.lower()}"],
+            ))
+        return CharacterPack(characters=sheets)
+```
+
+### `agents/world.py`
+```python
+from .base import BaseAgent
+from models import Script, Storyboard, WorldPack, EnvironmentSheet
+
+class WorldAgent(BaseAgent):
+    """Defines where the action happens — setting, props, lighting."""
+
+    def __init__(self, llm_client=None):
+        super().__init__("World", llm_client)
+
+    async def run(self, script: Script, storyboard: Storyboard, **kw) -> WorldPack:
+        self.log.info("Building worlds")
+        envs = []
+        for scene in script.scenes:
+            envs.append(EnvironmentSheet(
+                location=scene.heading,
+                description=scene.description,
+                props=["gummy vat", "conveyor belt", "neon sign"],
+                lighting="neon glow, low-key",
+                atmosphere="tense but playful",
+            ))
+        return WorldPack(environments=envs)
+```
+
+### `agents/visual.py`
+```python
+from .base import BaseAgent
+from models import (
+    Storyboard, CharacterPack, WorldPack,
+    VisualPack, KeyFrame,
+)
+
+class VisualAgent(BaseAgent):
+    """Produces 2D frames, layouts, and key poses."""
+
+    def __init__(self, llm_client=None, image_gen=None):
+        super().__init__("Visual", llm_client)
+        self.image_gen = image_gen  # e.g. DALL·E, Midjourney, SD
+
+    async def run(
+        self,
+        storyboard: Storyboard,
+        characters: CharacterPack,
+        world: WorldPack,
+        **kw,
+    ) -> VisualPack:
+        self.log.info("Generating %d key frames", len(storyboard.shots))
+        frames = []
+        for shot in storyboard.shots:
+            prompt = (
+                f"2D cartoon frame, {shot.shot_type.value} shot. "
+                f"Action: {shot.action}. "
+                f"Style: bright, flat shading."
+            )
+            # img = await self.image_gen.generate(prompt)  # real call
+            frames.append(KeyFrame(
+                shot_id=shot.shot_id,
+                image_prompt=prompt,
+                layout_description=shot.action,
+                character_refs=[c.name for c in characters.characters],
+                environment_ref=world.environments[0].location if world.environments else "",
+                image_path=None,  # filled by image_gen
+            ))
+        return VisualPack(frames=frames)
+```
+
+### `agents/consistency.py`
+```python
+from .base import BaseAgent
+from models import (
+    VisualPack, CharacterPack, ConsistencyReport,
+    ConsistencyVerdict, ConsistencyIssue,
+)
+
+class ConsistencyAgent(BaseAgent):
+    """Checks character identity, wardrobe, props, style continuity."""
+
+    def __init__(self, llm_client=None, max_revisions: int = 3):
+        super().__init__("Consistency", llm_client)
+        self.max_revisions = max_revisions
+
+    async def run(
+        self,
+        visuals: VisualPack,
+        characters: CharacterPack,
+        **kw,
+    ) -> ConsistencyReport:
+        self.log.info("Running consistency check on %d frames", len(visuals.frames))
+
+        issues: list[ConsistencyIssue] = []
+
+        for frame in visuals.frames:
+            # ── Real impl: vision model compares frame vs reference sheets ──
+            # issues += await self._check_face(frame, characters)
+            # issues += await self._check_wardrobe(frame, characters)
+            # issues += await self._check_props(frame)
+            pass  # placeholder
+
+        if issues:
+            return ConsistencyReport(
+                verdict=ConsistencyVerdict.FAIL,
+                issues=issues,
+                revision_notes="Fix character faces in shots S1_02, S1_03",
+            )
+        return ConsistencyReport(
+            verdict=ConsistencyVerdict.PASS,
+            issues=[],
+        )
+```
+
+### `agents/animation.py`
+```python
+from .base import BaseAgent
+from models import Storyboard, VisualPack, AnimationPack, AnimatedShot
+
+class AnimationAgent(BaseAgent):
+    """Creates motion, timing, transitions, lip sync."""
+
+    def __init__(self, llm_client=None, animation_engine=None):
+        super().__init__("Animation", llm_client)
+        self.engine = animation_engine  # e.g. Runway, Pika, custom
+
+    async def run(
+        self,
+        storyboard: Storyboard,
+        visuals: VisualPack,
+        **kw,
+    ) -> AnimationPack:
+        self.log.info("Animating %d shots", len(storyboard.shots))
+        animated = []
+        for shot in storyboard.shots:
+            # vid = await self.engine.animate(shot, visuals)
+            animated.append(AnimatedShot(
+                shot_id=shot.shot_id,
+                motion_description=f"Animate: {shot.action}",
+                timing_notes=f"Duration {shot.duration_sec}s",
+                lip_sync_script=shot.action if ":" in shot.action else "",
+                transition_in="fade" if shot.shot_id.endswith("01") else "cut",
+                transition_out="cut",
+            ))
+        return AnimationPack(shots=animated)
+```
+
+### `agents/audio.py`
+```python
+from .base import BaseAgent
+from models import Script, AnimationPack, AudioPack, AudioTrack
+
+class AudioAgent(BaseAgent):
+    """Generates music, dialogue VO, ambience, SFX."""
+
+    def __init__(self, llm_client=None, tts=None, music_gen=None):
+        super().__init__("Audio", llm_client)
+        self.tts = tts
+        self.music_gen = music_gen
+
+    async def run(
+        self,
+        script: Script,
+        animation: AnimationPack,
+        **kw,
+    ) -> AudioPack:
+        self.log.info("Producing audio tracks")
+        tracks = []
+        # Background music
+        tracks.append(AudioTrack(
+            track_type="music",
+            description="Upbeat heist theme, 120 BPM",
+        ))
+        # Dialogue VO per scene
+        for scene in script.scenes:
+            for d in scene.dialogue:
+                # audio_file = await self.tts.synthesize(d.line, voice=d.character)
+                tracks.append(AudioTrack(
+                    track_type="dialogue",
+                    description=f"{d.character}: {d.line}",
+                ))
+        # SFX
+        tracks.append(AudioTrack(
+            track_type="sfx",
+            description="gummy machine hum, footsteps, door creak",
+        ))
+        return AudioPack(tracks=tracks)
+```
+
+### `agents/editor.py`
+```python
+from .base import BaseAgent
+from models import AnimationPack, AudioPack, Episode
+
+class EditorAgent(BaseAgent):
+    """Assembles picture + sound into the final episode."""
+
+    def __init__(self, llm_client=None, nle=None):
+        super().__init__("Editor", llm_client)
+        self.nle = nle  # non-linear editor: FFmpeg, MoviePy, etc.
+
+    async def run(
+        self,
+        animation: AnimationPack,
+        audio: AudioPack,
+        title: str,
+        **kw,
+    ) -> Episode:
+        self.log.info("Editing final episode: %s", title)
+        total_runtime = sum(
+            float(s.timing_notes.split()[1].rstrip("s"))
+            for s in animation.shots
+            if s.timing_notes
+        ) or 120.0
+
+        # ── Real impl ──
+        # timeline = self.nle.create_timeline()
+        # for shot in animation.shots: timeline.add_video(shot.video_path)
+        # for track in audio.tracks: timeline.add_audio(track.file_path)
+        # output = await timeline.render("episode_final.mp4")
+
+        return Episode(
+            title=title,
+            runtime_sec=total_runtime,
+            video_path="output/episode_final.mp4",
+            metadata={
+                "shots": len(animation.shots),
+                "audio_tracks": len(audio.tracks),
+            },
+        )
+```
+
+---
+
+## 4. `pipeline.py` — The Orchestrator
+
+This is the heart. It handles **sequential flow**, **parallel fork/join**, and the **consistency FAIL loop**.
+
+```python
+"""
+EPISODEline Pipeline Orchestrator
+
+YOU → Creative → Story → Storyboard
+        → fork(Character ‖ World) → join
+        → Visual → Consistency ⇄ (loop)
+        → Animation → Audio → Editor → 🎬
+"""
+from __future__ import annotations
+import asyncio
+import logging
+from typing import Any
+
+from models import ConsistencyVerdict
+from agents.creative import CreativeDirectorAgent
+from agents.story import StoryAgent
+from agents.storyboard import StoryboardAgent
+from agents.character import CharacterAgent
+from agents.world import WorldAgent
+from agents.visual import VisualAgent
+from agents.consistency import ConsistencyAgent
+from agents.animation import AnimationAgent
+from agents.audio import AudioAgent
+from agents.editor import EditorAgent
+
+logger = logging.getLogger("episodeline.pipeline")
+
+
+class Pipeline:
+    def __init__(self, llm_client: Any = None):
+        # Instantiate every agent
+        self.creative   = CreativeDirectorAgent(llm_client)
+        self.story      = StoryAgent(llm_client)
+        self.storyboard = StoryboardAgent(llm_client)
+        self.character  = CharacterAgent(llm_client)
+        self.world      = WorldAgent(llm_client)
+        self.visual     = VisualAgent(llm_client)
+        self.consistency = ConsistencyAgent(llm_client)
+        self.animation  = AnimationAgent(llm_client)
+        self.audio      = AudioAgent(llm_client)
+        self.editor     = EditorAgent(llm_client)
+
+    async def run(self, raw_idea: str) -> "Episode":
+        from models import Episode  # local to avoid circular
+
+        logger.info("🚀 Pipeline started")
+        logger.info("💡 Idea: %s", raw_idea)
+
+        # ── 1. CREATIVE DIRECTOR ──────────────────────
+        brief = await self.creative.run(raw_idea=raw_idea)
+        logger.info("✅ Brief: tone=%s audience=%s", brief.tone, brief.audience)
+
+        # ── 2. STORY ──────────────────────────────────
+        script = await self.story.run(brief=brief)
+        logger.info("✅ Script: '%s' (%d scenes)", script.title, len(script.scenes))
+
+        # ── 3. STORYBOARD ────────────────────────────
+        storyboard = await self.storyboard.run(script=script)
+        logger.info("✅ Storyboard: %d shots, %.1fs",
+                     len(storyboard.shots), storyboard.total_duration_sec)
+
+        # ── 4. FORK: CHARACTER ‖ WORLD ───────────────
+        logger.info("🔀 Forking Character + World agents")
+        char_task = self.character.run(script=script, storyboard=storyboard)
+        world_task = self.world.run(script=script, storyboard=storyboard)
+        characters, world = await asyncio.gather(char_task, world_task)
+        logger.info("✅ Characters: %d | Environments: %d",
+                     len(characters.characters), len(world.environments))
+
+        # ── 5. VISUAL ────────────────────────────────
+        visuals = await self.visual.run(
+            storyboard=storyboard,
+            characters=characters,
+            world=world,
+        )
+        logger.info("✅ Visuals: %d key frames", len(visuals.frames))
+
+        # ── 6. CONSISTENCY LOOP ──────────────────────
+        revision = 0
+        max_revisions = self.consistency.max_revisions
+        while True:
+            report = await self.consistency.run(
+                visuals=visuals, characters=characters,
+            )
+            if report.verdict == ConsistencyVerdict.PASS:
+                logger.info("✅ Consistency PASS")
+                break
+
+            revision += 1
+            logger.warning(
+                "⚠️  Consistency FAIL (revision %d/%d): %s",
+                revision, max_revisions, report.revision_notes,
+            )
+            if revision >= max_revisions:
+                logger.warning("Max revisions reached — proceeding anyway")
+                break
+
+            # ── REVISE: send notes back to Visual Agent ──
+            visuals = await self.visual.run(
+                storyboard=storyboard,
+                characters=characters,
+                world=world,
+                revision_notes=report.revision_notes,
+            )
+
+        # ── 7. ANIMATION ─────────────────────────────
+        animation = await self.animation.run(
+            storyboard=storyboard, visuals=visuals,
+        )
+        logger.info("✅ Animation: %d shots", len(animation.shots))
+
+        # ── 8. AUDIO ─────────────────────────────────
+        audio = await self.audio.run(script=script, animation=animation)
+        logger.info("✅ Audio: %d tracks", len(audio.tracks))
+
+        # ── 9. EDITOR ────────────────────────────────
+        episode = await self.editor.run(
+            animation=animation, audio=audio, title=script.title,
+        )
+        logger.info("🎬 EPISODE READY: '%s' (%.1fs)", episode.title, episode.runtime_sec)
+
+        return episode
+```
+
+---
+
+## 5. `main.py` — Entry Point
+
+```python
+"""
+🎬 EPISODEline — Run the full animation pipeline.
+
+Usage:
+    python main.py "A crew of misfit gummy bears robs a candy factory"
+"""
+import asyncio
+import logging
+import sys
+
+from pipeline import Pipeline
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s │ %(name)-22s │ %(message)s",
+    datefmt="%H:%M:%S",
+)
+
+
+async def main():
+    idea = sys.argv[1] if len(sys.argv) > 1 else (
+        "A crew of misfit gummy bears robs a candy factory at midnight"
+    )
+
+    pipeline = Pipeline(llm_client=None)  # plug in your LLM here
+    episode = await pipeline.run(idea)
+
+    print("\n" + "=" * 50)
+    print(f"🎬  {episode.title}")
+    print(f"⏱   {episode.runtime_sec}s")
+    print(f"📁  {episode.video_path}")
+    print(f"📊  {episode.metadata}")
+    print("=" * 50)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+---
+
+## 6. `config.py` — Plug-in Points
+
+```python
+"""
+Swap in your real tools here.
+"""
+
+# LLM (script, direction, consistency checks)
+LLM_PROVIDER = "openai"        # openai | anthropic | local
+LLM_MODEL    = "gpt-4o"
+
+# Image generation (Visual Agent)
+IMAGE_GEN    = "dalle-3"       # dalle-3 | midjourney | stable-diffusion
+
+# Video / Animation (Animation Agent)
+VIDEO_GEN    = "runway-gen3"   # runway | pika | kling | custom
+
+# TTS (Audio Agent)
+TTS_ENGINE   = "elevenlabs"    # elevenlabs | openai-tts | bark
+
+# Music (Audio Agent)
+MUSIC_GEN    = "suno"          # suno | udio | musicgen
+
+# NLE (Editor Agent)
+NLE_ENGINE   = "ffmpeg"        # ffmpeg | moviepy | remotion
+```
+
+---
+
+## How It All Flows
+
+```
+YOU ──► "gummy bear heist"
+          │
+          ▼
+   ┌──────────────┐
+   │   CREATIVE   │ ──► Brief(tone, audience, goals)
+   └──────┬───────┘
+          ▼
+   ┌──────────────┐
+   │    STORY     │ ──► Script(scenes, dialogue)
+   └──────┬───────┘
+          ▼
+   ┌──────────────┐
+   │  STORYBOARD  │ ──► Shots(type, action, timing)
+   └──────┬───────┘
+          ▼
+    ┌─────┴─────┐
+    ▼           ▼
+┌────────┐ ┌────────┐
+│CHARACT.│ │ WORLD  │   ◄── asyncio.gather()
+└───┬────┘ └───┬────┘
+    └─────┬────┘
+          ▼
+   ┌──────────────┐
+   │   VISUAL     │ ──► KeyFrames(prompts → images)
+   └──────┬───────┘
+          ▼
+   ┌──────────────┐    FAIL
+   │ CONSISTENCY  │ ──────────► back to VISUAL
+   └──────┬───────┘   (max 3x)
+        PASS
+          ▼
+   ┌──────────────┐
+   │  ANIMATION   │ ──► AnimatedShots(video clips)
+   └──────┬───────┘
+          ▼
+   ┌──────────────┐
+   │    AUDIO     │ ──► Tracks(VO, music, SFX)
+   └──────┬───────┘
+          ▼
+   ┌──────────────┐
+   │    EDITOR    │ ──► Final cut
+   └──────┬───────┘
+          ▼
+      🎬 EPISODE
+```
+
+---
+
+## To Make It Real
+
+| Step | What to plug in |
+|------|----------------|
+| **LLM calls** | Replace `# prompt = ...` comments with actual `openai.ChatCompletion` / `anthropic.Messages` calls in each agent |
+| **Image gen** | Wire `self.image_gen.generate()` in `VisualAgent` to DALL·E / SD API |
+| **Animation** | Wire `self.engine.animate()` to Runway / Kling / Pika API |
+| **TTS** | Wire `self.tts.synthesize()` to ElevenLabs per character voice |
+| **Music** | Wire `self.music_gen` to Suno / MusicGen |
+| **Consistency** | Use a vision model (GPT-4o vision) to compare each frame against character reference sheets |
+| **Editor** | Use `moviepy` or `ffmpeg` subprocess to stitch video + audio |
+
+The skeleton is complete and runnable as-is (with placeholder data). Every agent is isolated, typed, and ready for you to drop in real API calls.

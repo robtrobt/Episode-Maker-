@@ -1,0 +1,44 @@
+04:35:54 │ episodeline.pipeline   │ 🚀 Pipeline started
+04:35:54 │ episodeline.pipeline   │ 💡 Idea: The Iggies race to fix the stage before the Iggy Junior High talent show
+04:35:54 │ episodeline.pipeline   │ 🆓 text=pollinations:openai-fast, images=local procedural, voice=gtts, music=procedural, video=ffmpeg
+04:35:54 │ episodeline.pipeline   │ 🗂  Characters: C:\Users\Lills\Desktop\EPISODE BUILDER\characters
+04:35:54 │ episodeline.CreativeDirector │ Interpreting idea: The Iggies race to fix the stage before the Iggy Junior High talent show
+04:35:55 │ episodeline.pipeline   │ ✅ Brief: tone=whimsical audience=kids
+04:35:56 │ episodeline.Story      │ Writing script for 'The Iggies race to fix the stage before '
+04:35:56 │ episodeline.pipeline   │ ✅ Script: 'Iggy Stage Sprint' (2 scenes)
+04:35:56 │ episodeline.pipeline   │ 📂 Run: C:\Users\Lills\Desktop\EPISODE BUILDER\output\20261101-043556-iggy-stage-sprint
+04:35:56 │ episodeline.Storyboard │ Storyboarding 2 scenes
+04:35:56 │ episodeline.pipeline   │ ✅ Storyboard: 6 shots, 20.0s
+04:35:56 │ episodeline.pipeline   │ 🔀 Forking Character + World agents
+04:35:56 │ episodeline.Character  │ Using Milo (characters/milo)
+04:35:56 │ episodeline.Character  │ Using Pip (characters/pip)
+04:35:56 │ episodeline.Character  │ Using Yoshi (characters/yoshi)
+04:35:56 │ episodeline.World      │ Building worlds
+04:35:56 │ episodeline.pipeline   │ ✅ Character + World ready: 3 characters, 2 environments
+04:35:56 │ episodeline.Visual     │ Generating 6 key frames (local procedural)
+04:35:56 │ episodeline.Visual     │ frame 1/6 S1_01
+04:35:57 │ episodeline.Visual     │ frame 2/6 S1_02
+04:35:57 │ episodeline.Visual     │ frame 3/6 S1_03
+04:35:57 │ episodeline.Visual     │ frame 4/6 S2_01
+04:35:57 │ episodeline.Visual     │ frame 5/6 S2_02
+04:35:58 │ episodeline.Visual     │ frame 6/6 S2_03
+04:35:58 │ episodeline.Visual     │ ✅ 6 frames (0 free API, 6 local placeholders)
+04:35:58 │ episodeline.Consistency │ Running consistency check on 6 frames
+04:35:58 │ episodeline.pipeline   │ ✅ Consistency PASS
+04:35:58 │ episodeline.Animation  │ Animating 6 shots
+04:35:58 │ episodeline.pipeline   │ ✅ Animation: 6 shots
+04:35:58 │ episodeline.Audio      │ Producing audio for 20.0s
+04:36:03 │ episodeline.Audio      │ ✅ 6 tracks (4 spoken lines)
+04:36:03 │ episodeline.Editor     │ Editing final episode: Iggy Stage Sprint
+04:36:43 │ episodeline.Editor     │ ✅ rendered episode.mp4
+04:36:43 │ episodeline.pipeline   │ 🎬 EPISODE READY: 'Iggy Stage Sprint' (20.0s)
+
+============================================================
+🎬  Iggy Stage Sprint
+⏱   20.0s
+🗂   Milo, Pip, Yoshi
+🎞   C:\Users\Lills\Desktop\EPISODE BUILDER\output\20261101-043556-iggy-stage-sprint\episode.mp4
+🖼   C:\Users\Lills\Desktop\EPISODE BUILDER\output\20261101-043556-iggy-stage-sprint\thumbnail.png
+🆓  text=pollinations:openai-fast, images=local procedural, voice=gtts, music=procedural, video=ffmpeg
+📁  C:\Users\Lills\Desktop\EPISODE BUILDER\output\20261101-043556-iggy-stage-sprint
+============================================================

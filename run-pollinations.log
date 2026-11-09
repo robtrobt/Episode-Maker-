@@ -1,0 +1,54 @@
+04:39:16 │ episodeline.pipeline   │ 🚀 Pipeline started
+04:39:16 │ episodeline.pipeline   │ 💡 Idea: The Iggies race to fix the stage before the Iggy Junior High talent show
+04:39:16 │ episodeline.pipeline   │ 🆓 text=pollinations:openai-fast, images=pollinations:flux, voice=gtts, music=procedural, video=ffmpeg
+04:39:16 │ episodeline.pipeline   │ 🗂  Characters: C:\Users\Lills\Desktop\EPISODE BUILDER\characters
+04:39:16 │ episodeline.CreativeDirector │ Interpreting idea: The Iggies race to fix the stage before the Iggy Junior High talent show
+04:39:17 │ episodeline.pipeline   │ ✅ Brief: tone=whimsical audience=kids
+04:39:17 │ episodeline.Story      │ Writing script for 'The Iggies race to fix the stage before '
+04:39:17 │ episodeline.pipeline   │ ✅ Script: 'Iggy Stage Sprint' (2 scenes)
+04:39:17 │ episodeline.pipeline   │ 📂 Run: C:\Users\Lills\Desktop\EPISODE BUILDER\output\20261101-043917-iggy-stage-sprint
+04:39:17 │ episodeline.Storyboard │ Storyboarding 2 scenes
+04:39:17 │ episodeline.pipeline   │ ✅ Storyboard: 6 shots, 20.0s
+04:39:17 │ episodeline.pipeline   │ 🔀 Forking Character + World agents
+04:39:17 │ episodeline.Character  │ Using Milo (characters/milo)
+04:39:17 │ episodeline.Character  │ Using Pip (characters/pip)
+04:39:17 │ episodeline.Character  │ Using Yoshi (characters/yoshi)
+04:39:17 │ episodeline.World      │ Building worlds
+04:39:17 │ episodeline.pipeline   │ ✅ Character + World ready: 3 characters, 2 environments
+04:39:17 │ episodeline.Visual     │ Generating 6 key frames
+04:39:17 │ episodeline.Visual     │ frame 1/6 S1_01
+04:39:23 │ episodeline.Visual     │ frame 2/6 S1_02
+04:39:24 │ episodeline.providers  │  free tier busy (HTTP 402) — retrying in 40s
+04:40:07 │ episodeline.providers  │  free tier busy (HTTP 503) — retrying in 10s
+04:40:17 │ episodeline.providers  │  free tier busy (HTTP 402) — retrying in 33s
+04:40:57 │ episodeline.providers  │  image unavailable (request failed: HTTP 503: {"status":503,"success":false,"error":{"code":"SERVICE_UNAVAILABLE","message":"The Classic API is at its limit right now. Retry after 10s, or get full access to) — local placeholder for S1_02-r0
+04:41:25 │ episodeline.Visual     │ frame 3/6 S1_03
+04:41:29 │ episodeline.providers  │  free tier busy (HTTP 402) — retrying in 12s
+04:41:47 │ episodeline.Visual     │ frame 4/6 S2_01
+04:41:48 │ episodeline.providers  │  free tier busy (HTTP 402) — retrying in 39s
+04:42:35 │ episodeline.Visual     │ frame 5/6 S2_02
+04:42:40 │ episodeline.providers  │  free tier busy (HTTP 402) — retrying in 33s
+04:43:18 │ episodeline.providers  │  free tier busy (HTTP 503) — retrying in 10s
+04:43:32 │ episodeline.providers  │  free tier busy (HTTP 402) — retrying in 29s
+04:44:09 │ episodeline.Visual     │ frame 6/6 S2_03
+04:44:15 │ episodeline.providers  │  free tier busy (HTTP 402) — retrying in 33s
+04:44:58 │ episodeline.Visual     │ ✅ 6 frames (5 free API, 1 local placeholders)
+04:44:58 │ episodeline.Consistency │ Running consistency check on 6 frames
+04:44:59 │ episodeline.pipeline   │ ✅ Consistency PASS
+04:44:59 │ episodeline.Animation  │ Animating 6 shots
+04:44:59 │ episodeline.pipeline   │ ✅ Animation: 6 shots
+04:44:59 │ episodeline.Audio      │ Producing audio for 20.0s
+04:46:03 │ episodeline.Audio      │ ✅ 6 tracks (4 spoken lines)
+04:46:03 │ episodeline.Editor     │ Editing final episode: Iggy Stage Sprint
+04:48:39 │ episodeline.Editor     │ ✅ rendered episode.mp4
+04:48:40 │ episodeline.pipeline   │ 🎬 EPISODE READY: 'Iggy Stage Sprint' (20.0s)
+
+============================================================
+🎬  Iggy Stage Sprint
+⏱   20.0s
+🗂   Milo, Pip, Yoshi
+🎞   C:\Users\Lills\Desktop\EPISODE BUILDER\output\20261101-043917-iggy-stage-sprint\episode.mp4
+🖼   C:\Users\Lills\Desktop\EPISODE BUILDER\output\20261101-043917-iggy-stage-sprint\thumbnail.jpg
+🆓  text=pollinations:openai-fast, images=pollinations:flux, voice=gtts, music=procedural, video=ffmpeg
+📁  C:\Users\Lills\Desktop\EPISODE BUILDER\output\20261101-043917-iggy-stage-sprint
+============================================================
